@@ -1,0 +1,23 @@
+services:
+  mlflow:
+    image: ghcr.io/mlflow/mlflow:latest
+    ports:
+      - "5000:5000"
+    command: "mlflow server --host 0.0.0.0 --backend-store-uri /mlflow --default-artifact-root /mlflow/artifacts"
+    volumes:
+      - ./mlflow:/mlflow
+  app:
+    build: .
+    volumes:
+      - ./src:/app/src
+      - ./datasets:/app/data
+      - ./logs:/app/logs
+    depends_on:
+      - mlflow
+    environment:
+      - MLFLOW_TRACKING_URI=http://mlflow:5000
+    command: >
+      sh -c "python src/bronze_ingest.py &&
+             python src/silver_transform.py &&
+             python src/gold_build.py &&
+             python src/ml_training.py"
