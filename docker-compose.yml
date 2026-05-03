@@ -17,7 +17,7 @@ services:
     environment:
       - MLFLOW_TRACKING_URI=http://mlflow:5000
     command: >
-      sh -c "python src/bronze_ingest.py &&
+      sh -c "python src/bronze_loader.py &&
              python src/silver_transform.py &&
              python src/gold_build.py &&
              python src/ml_training.py"

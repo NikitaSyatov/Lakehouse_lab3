@@ -1,2 +1,3 @@
 datasets/
 delta_table/
+__pycache__
