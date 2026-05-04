@@ -8,12 +8,12 @@ GOLD_AGG_PATH = "data/gold/agg_delays"
 GOLD_FEATURES_PATH = "data/gold/features"
 
 # Исходный CSV (указать правильный путь к скачанному файлу)
-CSV_PATH = "data/shubhamsingh42/flight-delay-dataset-2018-2024/versions/1/flight_data_2018_2024.csv.100"
+CSV_PATH = "data/shubhamsingh42/flight-delay-dataset-2018-2024/versions/1/flight_data_2018_2024.csv"
 
 # Настройки загрузки
 CSV_SEP = ","
 CSV_ENCODING = "utf8"
-BATCH_SIZE = 10000
+BATCH_SIZE = 1000
 
 # Названия важных колонок датасета
 FL_DATE_COL = "FlightDate"                     # YYYYMMDD

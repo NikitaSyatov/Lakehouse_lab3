@@ -44,7 +44,7 @@ def load_bronze_streaming():
                 merge_delta(full_df, BRONZE_PATH, merge_keys=MERGE_KEYS, partition_by=None)
                 print(f"  Дата {current_date}: записано {len(full_df)}")
                 first_batch = False
-                total_dates += 1
+                # total_dates += 1
                 # Начинаем новую дату
                 current_date = date
                 buffer = [group]
