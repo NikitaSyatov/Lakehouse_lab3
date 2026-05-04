@@ -1,37 +1,64 @@
 import polars as pl
 from deltalake import write_deltalake
 import os
-from config import BRONZE_PATH, CSV_PATH, CSV_SEP, CSV_ENCODING, FL_DATE_COL, MERGE_KEYS
-from lakehouse_util import merge_delta
 
-def get_dates_from_csv() -> list:
-    """Возвращает отсортированный список уникальных дат из CSV с помощью ленивого сканирования."""
-    lf = pl.scan_csv(CSV_PATH, separator=CSV_SEP, encoding=CSV_ENCODING)
-    dates = lf.select(pl.col(FL_DATE_COL).unique()).collect()[FL_DATE_COL].to_list()
-    return sorted(dates)
+from config import (
+    CSV_PATH, BRONZE_PATH, CSV_SEP, CSV_ENCODING,
+    FL_DATE_COL, MERGE_KEYS, ZORDER_COLS, BATCH_SIZE
+)
+from lakehouse_util import merge_delta, optimize_delta
 
-def load_bronze():
-    print("== Bronze: download csv per days ==")
-    dates = get_dates_from_csv()
-    print(f"Dates: {dates}")
+def load_bronze_streaming():
+    if not os.path.exists(CSV_PATH):
+        raise FileNotFoundError(CSV_PATH)
 
-    for date in dates:
-        print(f"Processing date - {date}")
-        # Ленивый скан с фильтром по году
-        lf = (pl.scan_csv(CSV_PATH, separator=CSV_SEP, encoding=CSV_ENCODING)
-              .filter(pl.col(FL_DATE_COL) == date))
-        # Выполняем и получаем DataFrame
-        df_day = lf.collect()
-        if df_day.is_empty():
-            continue
+    print("== Bronze: потоковая загрузка CSV по дням ==")
+    # Ленивый скан с сортировкой по дате
+    lf = pl.scan_csv(
+        CSV_PATH,
+        separator=CSV_SEP,
+        encoding=CSV_ENCODING,
+        has_header=True,
+        infer_schema_length=10000
+    ).sort(FL_DATE_COL)
 
-        # Используем MERGE (первый год будет overwrite, остальные append с merge)
-        merge_delta(df_day, BRONZE_PATH, merge_keys=MERGE_KEYS, partition_by=None)
-        print(f"  Downloaded {len(df_day)} rows from {date}")
+    batch_iter = lf.collect_batches(chunk_size=BATCH_SIZE)  # батч по 10k строк
 
-    # После загрузки выполняем OPTIMIZE + Z-ORDER для улучшения производительности
-    from lakehouse_util import optimize_delta
-    optimize_delta(BRONZE_PATH, zorder_cols=["YEAR", "MONTH"])
+    current_date = None
+    buffer = []
+    first_batch = True
+
+    for batch_df in batch_iter:
+        # Разбиваем батч по датам (строки уже отсортированы)
+        for date, group in batch_df.group_by(FL_DATE_COL, maintain_order=True):
+            if current_date is None:
+                current_date = date
+                buffer.append(group)
+            elif date == current_date:
+                buffer.append(group)
+            else:
+                # Записываем накопленные строки предыдущей даты
+                full_df = pl.concat(buffer)
+                # mode = "overwrite" if first_batch else "append"
+                # write_deltalake(BRONZE_PATH, full_df, mode=mode)
+                merge_delta(full_df, BRONZE_PATH, merge_keys=MERGE_KEYS, partition_by=None)
+                print(f"  Дата {current_date}: записано {len(full_df)}")
+                first_batch = False
+                total_dates += 1
+                # Начинаем новую дату
+                current_date = date
+                buffer = [group]
+    # Последняя дата
+    if buffer:
+        full_df = pl.concat(buffer)
+        # mode = "overwrite" if first_batch else "append"
+        # write_deltalake(BRONZE_PATH, full_df, mode=mode)
+        merge_delta(full_df, BRONZE_PATH, merge_keys=MERGE_KEYS, partition_by=None)
+        print(f"  Дата {current_date}: записано {len(full_df)} строк")
+
+    # Оптимизация Delta-таблицы
+    optimize_delta(BRONZE_PATH, zorder_cols=ZORDER_COLS)
+    print("✅ Bronze-слой готов")
 
 if __name__ == "__main__":
-    load_bronze()
+    load_bronze_streaming()
