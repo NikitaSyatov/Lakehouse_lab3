@@ -13,7 +13,7 @@ CSV_PATH = "data/shubhamsingh42/flight-delay-dataset-2018-2024/versions/1/flight
 # Настройки загрузки
 CSV_SEP = ","
 CSV_ENCODING = "utf8"
-BATCH_SIZE = 1000
+BATCH_SIZE = 20000
 
 # Названия важных колонок датасета
 FL_DATE_COL = "FlightDate"                     # YYYYMMDD

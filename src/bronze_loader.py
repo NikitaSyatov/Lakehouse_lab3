@@ -1,4 +1,5 @@
 import polars as pl
+import time
 from deltalake import write_deltalake
 import os
 
@@ -19,14 +20,15 @@ def load_bronze_streaming():
         separator=CSV_SEP,
         encoding=CSV_ENCODING,
         has_header=True,
-        infer_schema_length=10000
+        infer_schema_length=5000,
+        low_memory=True
     ).sort(FL_DATE_COL)
 
     batch_iter = lf.collect_batches(chunk_size=BATCH_SIZE)  # батч по 10k строк
 
     current_date = None
     buffer = []
-    first_batch = True
+    total_dates = 0
 
     for batch_df in batch_iter:
         # Разбиваем батч по датам (строки уже отсортированы)
@@ -43,11 +45,11 @@ def load_bronze_streaming():
                 # write_deltalake(BRONZE_PATH, full_df, mode=mode)
                 merge_delta(full_df, BRONZE_PATH, merge_keys=MERGE_KEYS, partition_by=None)
                 print(f"  Дата {current_date}: записано {len(full_df)}")
-                first_batch = False
-                # total_dates += 1
+                total_dates += 1
                 # Начинаем новую дату
                 current_date = date
                 buffer = [group]
+                time.sleep(0.1) # some pause
     # Последняя дата
     if buffer:
         full_df = pl.concat(buffer)
@@ -55,10 +57,11 @@ def load_bronze_streaming():
         # write_deltalake(BRONZE_PATH, full_df, mode=mode)
         merge_delta(full_df, BRONZE_PATH, merge_keys=MERGE_KEYS, partition_by=None)
         print(f"  Дата {current_date}: записано {len(full_df)} строк")
+        total_dates += 1
 
     # Оптимизация Delta-таблицы
     optimize_delta(BRONZE_PATH, zorder_cols=ZORDER_COLS)
-    print("✅ Bronze-слой готов")
+    print(f"✅ Bronze-слой готов. Обработано дат: {total_dates}")
 
 if __name__ == "__main__":
     load_bronze_streaming()
