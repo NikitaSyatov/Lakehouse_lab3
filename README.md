@@ -1,5 +1,7 @@
 # Lakehouse_lab3
 
+Примеры запросов находятся в логах (logs/explain*.txt)
+
 # Результаты из MLFlow GUI:
 
 ## Regression
