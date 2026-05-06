@@ -1,0 +1,14 @@
+artifact_uri: /mlflow/artifacts/559280678524171406/68fa2872f9914d219e2011de9cc08d90/artifacts
+end_time: null
+entry_point_name: ''
+experiment_id: '559280678524171406'
+lifecycle_stage: active
+run_id: 68fa2872f9914d219e2011de9cc08d90
+run_name: silent-shoat-361
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1778078939275
+status: 1
+tags: []
+user_id: root

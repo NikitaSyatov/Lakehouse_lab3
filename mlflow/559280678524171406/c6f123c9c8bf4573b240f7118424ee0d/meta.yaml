@@ -1,0 +1,14 @@
+artifact_uri: /mlflow/artifacts/559280678524171406/c6f123c9c8bf4573b240f7118424ee0d/artifacts
+end_time: null
+entry_point_name: ''
+experiment_id: '559280678524171406'
+lifecycle_stage: active
+run_id: c6f123c9c8bf4573b240f7118424ee0d
+run_name: defiant-asp-58
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1778077990450
+status: 1
+tags: []
+user_id: root

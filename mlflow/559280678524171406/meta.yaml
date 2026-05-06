@@ -1,0 +1,8 @@
+artifact_location: /mlflow/artifacts/559280678524171406
+creation_time: 1778076989884
+experiment_id: '559280678524171406'
+last_update_time: 1778076989884
+lifecycle_stage: active
+name: flight_delay_prediction
+trace_location: null
+workspace: default

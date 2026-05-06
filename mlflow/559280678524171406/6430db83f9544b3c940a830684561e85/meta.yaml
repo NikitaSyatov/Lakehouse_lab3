@@ -1,0 +1,14 @@
+artifact_uri: /mlflow/artifacts/559280678524171406/6430db83f9544b3c940a830684561e85/artifacts
+end_time: 1778081923063
+entry_point_name: ''
+experiment_id: '559280678524171406'
+lifecycle_stage: active
+run_id: 6430db83f9544b3c940a830684561e85
+run_name: hilarious-ant-148
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1778081919588
+status: 3
+tags: []
+user_id: root
