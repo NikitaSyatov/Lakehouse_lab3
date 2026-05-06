@@ -1,0 +1,52 @@
+=== Демонстрация Polars explain() с pushdown оптимизациями ===
+
+1. Запрос: средняя задержка по аэропортам и авиакомпаниям для 2024 года
+
+=== ОПТИМИЗИРОВАННЫЙ ПЛАН ЗАПРОСА 1 ===
+SORT BY [slice: (0, 10, dynamic_pred: 6e447245-5a50-49ce-9ae8-7c6aeaf52c60), descending: [true]] [col("avg_delay")]
+  FILTER col("avg_delay").dynamic_predicate()
+  FROM
+    AGGREGATE[maintain_order: false]
+      [col("ArrDelay").mean().alias("avg_delay"), len().alias("flight_count")] BY [col("Origin"), col("Marketing_Airline_Network")]
+      FROM
+      simple π 3/3 ["ArrDelay", "Origin", ... 1 other column]
+        Parquet SCAN [/app/data/silver/delta/Year=2024/Month=1/part-00000-2b873428-a13e-4909-b414-1d64ed69e2fe-c000.zstd.parquet]
+        PROJECT 4/23 COLUMNS
+        SELECTION: [(col("Year")) == (2024)]
+
+================================================================================
+
+2. Запрос: анализ задержек по часам для рейсов с расстоянием > 500 миль
+
+=== ОПТИМИЗИРОВАННЫЙ ПЛАН ЗАПРОСА 2 ===
+SORT BY [col("hour")]
+  AGGREGATE[maintain_order: false]
+    [col("ArrDelay").mean().alias("avg_arr_delay"), col("DepDelay").mean().alias("avg_dep_delay"), len().alias("cnt")] BY [col("hour"), col("Marketing_Airline_Network")]
+    FROM
+    simple π 4/4 ["ArrDelay", "DepDelay", "hour", ... 1 other column]
+      Parquet SCAN [/app/data/silver/delta/Year=2024/Month=1/part-00000-2b873428-a13e-4909-b414-1d64ed69e2fe-c000.zstd.parquet]
+      PROJECT 6/23 COLUMNS
+      SELECTION: [([([(col("Year")) == (2024)]) & ([(col("Distance")) > (500.0)])]) & ([(col("DepDelay")) > (0.0)])]
+
+================================================================================
+
+=== ОБЪЯСНЕНИЕ PUSHDOWN ОПТИМИЗАЦИЙ ===
+
+1. PROJECTION PUSHDOWN:
+   - Polars читает только колонки, указанные в select/group_by/agg
+   - В примере 1: читаются только колонки: Origin, Marketing_Airline_Network, ArrDelay, Year
+   - Колонки, не участвующие в запросе (например, 'Dest', 'Route'), не загружаются
+
+2. PREDICATE PUSHDOWN:
+   - Фильтры применяются на уровне чтения данных
+   - В примере 1: filter(Year == 2024) применяется до загрузки данных
+   - Это уменьшает количество читаемых строк
+
+3. AGGREGATION PUSHDOWN:
+   - Агрегации (group_by) частично выполняются на уровне партиций
+   - Уменьшает данные перед финальной агрегацией
+
+4. ДОПОЛНИТЕЛЬНЫЕ ОПТИМИЗАЦИИ:
+   - LIMIT pushdown: limit(10) применяется как можно раньше
+   - SORT может быть частично выполнен на уровне партиций
+   - Фильтры комбинируются (AND) для максимальной эффективности

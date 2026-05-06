@@ -26,4 +26,5 @@ services:
       sh -c "python src/bronze_loader.py &&
              python src/silver_transform.py &&
              python src/gold_process.py &&
-             python src/ml_train.py"
+             python src/ml_train.py &&
+             python src/explain_demo.py"
