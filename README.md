@@ -1,6 +1,6 @@
 # Lakehouse_lab3
 
-Примеры запросов находятся в логах (logs/explain*.txt)
+Примеры запросов находятся в логах (logs/explain_output_*.txt)
 
 # Результаты из MLFlow GUI:
 
